@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - PRO</title>
+    <title>TAISO CRM - SMART CALLS</title>
     <style>
-        :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; }
+        :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; --today: #2196F3; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; padding-top: 80px; }
         
-        /* Fixed Search Bar - Bada Input, Chota Button */
         .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); display: flex; gap: 5px; }
         .search-box input { flex: 5; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
         .search-btn { flex: 1; background: var(--neon); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
 
         .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #777; font-weight: bold; }
+        .section-header { border-left: 4px solid var(--neon); padding-left: 10px; margin: 20px 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .today-header { border-left-color: var(--today); color: var(--today); }
+
         .input-group { background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid #222; margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
-        .main-save-btn { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 5px; cursor: pointer; font-size: 16px; }
+        .main-save-btn { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 5px; cursor: pointer; }
 
-        /* Client Card & History */
-        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
-        .history-box { font-size: 12px; background: #000; padding: 12px; border-radius: 8px; margin-top: 10px; color: #ccc; border: 1px dashed #444; white-space: pre-line; line-height: 1.5; }
+        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; border-left: 4px solid transparent; }
+        .is-today { border-left-color: var(--today); background: #0a111a; }
+        .history-box { font-size: 12px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
         
-        /* Action Buttons Side-by-Side */
         .action-btns { display: flex; gap: 8px; margin-top: 12px; }
-        .mini-btn { flex: 1; padding: 12px 5px; font-size: 11px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .mini-btn { flex: 1; padding: 12px 5px; font-size: 11px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; text-align: center; }
         .btn-update { background: #333; color: #fff; border: 1px solid var(--neon); }
         .btn-delete { background: none; border: 1px solid var(--danger); color: var(--danger); }
 
@@ -35,7 +36,7 @@
 <body>
 
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search Client Name/No...">
+        <input type="text" id="searchInput" placeholder="Search Client...">
         <button class="search-btn" onclick="filterClients()">🔍</button>
     </div>
 
@@ -43,15 +44,16 @@
     <div id="syncStatus" class="status-bar">Connecting...</div>
 
     <div class="input-group">
-        <h4 style="margin:0 0 10px 0; color:var(--neon)">Add New Inquiry</h4>
+        <h4 style="margin:0; color:var(--neon)">+ New Inquiry</h4>
         <input type="text" id="name" placeholder="Client Name">
         <input type="tel" id="phone" placeholder="Phone Number">
         <input type="date" id="visitDate">
-        <textarea id="initialNote" placeholder="Write remarks here..."></textarea>
-        <button onclick="addClient()" id="saveBtn" class="main-save-btn">Save & Sync</button>
+        <textarea id="initialNote" placeholder="Initial Remarks..."></textarea>
+        <button onclick="addClient()" id="saveBtn" class="main-save-btn">Save to Cloud</button>
     </div>
 
-    <div id="listContainer"></div>
+    <div id="todayList"></div>
+    <div id="allList"></div>
 
     <script>
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
@@ -66,12 +68,10 @@
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
                     status.innerText = "✅ Live Sync: " + new Date().toLocaleTimeString();
-                    status.style.color = "#92d050";
                     render();
                 }
             } catch(e) {
                 status.innerText = "⚠️ Offline Mode";
-                status.style.color = "orange";
                 render();
             }
         }
@@ -81,23 +81,12 @@
             const phone = document.getElementById('phone').value;
             const date = document.getElementById('visitDate').value;
             const note = document.getElementById('initialNote').value;
-            const btn = document.getElementById('saveBtn');
-
             if(name && date) {
-                btn.innerText = "Syncing..."; btn.disabled = true;
                 const ts = new Date().toLocaleString('en-IN');
-                const history = `[${ts}] ${note}`;
-                const payload = { name, phone, date, remarks: note, history: history };
-                
+                const payload = { name, phone, date, remarks: note, history: `[${ts}] ${note}` };
                 fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-                .then(() => {
-                    syncData();
-                    document.getElementById('name').value=''; 
-                    document.getElementById('phone').value='';
-                    document.getElementById('initialNote').value='';
-                    btn.innerText = "Save & Sync"; btn.disabled = false;
-                });
-            } else { alert("Name & Date required!"); }
+                .then(() => { syncData(); document.getElementById('name').value=''; document.getElementById('phone').value=''; document.getElementById('initialNote').value=''; });
+            }
         }
 
         function toggleUpdate(idx) {
@@ -109,71 +98,55 @@
             const client = clients[idx];
             const nextDate = document.getElementById(`date-${idx}`).value;
             const updateNote = document.getElementById(`note-${idx}`).value;
-            
-            if(!nextDate || !updateNote) { alert("Fill all fields!"); return; }
-
-            const ts = new Date().toLocaleString('en-IN');
-            const newHistory = client.history + `\n| [${ts}] ${updateNote}`;
-            
-            const payload = { name: client.name, phone: client.phone, date: nextDate, remarks: updateNote, history: newHistory };
-
-            fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-            .then(() => { alert("Updated!"); syncData(); });
+            if(nextDate && updateNote) {
+                const ts = new Date().toLocaleString('en-IN');
+                const newHistory = client.history + `\n| [${ts}] ${updateNote}`;
+                const payload = { name: client.name, phone: client.phone, date: nextDate, remarks: updateNote, history: newHistory };
+                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).then(() => { alert("Updated!"); syncData(); });
+            }
         }
 
-        function deleteEntry(index) {
-            if(confirm("Are you sure you want to delete this client from app?")) {
-                clients.splice(index, 1);
-                localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                render();
-            }
+        function render(data = clients) {
+            const todayContainer = document.getElementById('todayList');
+            const allContainer = document.getElementById('allList');
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let todayHtml = `<div class="section-header today-header">📞 Today's Tasks (Follow-ups)</div>`;
+            let allHtml = `<div class="section-header">📂 All Inquiries</div>`;
+
+            let hasToday = false;
+            [...data].reverse().forEach((c) => {
+                const realIdx = clients.indexOf(c);
+                const isToday = c.date === todayStr;
+                const html = `
+                    <div class="client-item ${isToday ? 'is-today' : ''}">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div><b style="font-size:18px; color:var(--neon);">${c.name}</b><br><span style="font-size:13px; color:#888;">📞 ${c.phone}</span></div>
+                            <div style="text-align:right;"><span style="font-size:10px; color:#555;">Call On</span><br><b style="color:#fff;">${c.date}</b></div>
+                        </div>
+                        <div class="history-box">${c.history || c.remarks}</div>
+                        <div class="action-btns">
+                            <button class="mini-btn btn-update" onclick="toggleUpdate(${realIdx})">📞 UPDATE CALL</button>
+                            <button class="mini-btn btn-delete" onclick="if(confirm('Delete?')) { clients.splice(${realIdx},1); render(); }">🗑️ DELETE</button>
+                        </div>
+                        <div id="box-${realIdx}" class="update-section">
+                            <input type="date" id="date-${realIdx}" value="${c.date}">
+                            <textarea id="note-${realIdx}" placeholder="What was the result of today's call?"></textarea>
+                            <button onclick="saveFollowUp(${realIdx})" class="main-save-btn">SAVE & UPDATE DATE</button>
+                        </div>
+                    </div>`;
+                
+                if(isToday) { todayHtml += html; hasToday = true; } 
+                else { allHtml += html; }
+            });
+
+            todayContainer.innerHTML = hasToday ? todayHtml : `<div class="section-header today-header">✅ No calls scheduled for today</div>`;
+            allContainer.innerHTML = allHtml;
         }
 
         function filterClients() {
             const term = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = clients.filter(c => 
-                (c.name && c.name.toString().toLowerCase().includes(term)) || 
-                (c.phone && c.phone.toString().includes(term))
-            );
-            render(filtered);
-        }
-
-        function render(data = clients) {
-            const container = document.getElementById('listContainer');
-            container.innerHTML = `<h4>Inquiries (${data.length})</h4>`;
-            
-            [...data].reverse().forEach((c) => {
-                const realIdx = clients.indexOf(c);
-                const div = document.createElement('div');
-                div.className = 'client-item';
-                div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div>
-                            <b style="font-size:18px; color:var(--neon);">${c.name}</b><br>
-                            <span style="font-size:13px; color:#888;">📞 ${c.phone}</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="font-size:10px; color:#555;">Follow-up</span><br>
-                            <b style="color:#fff; font-size:12px;">${c.date}</b>
-                        </div>
-                    </div>
-                    
-                    <div class="history-box"><b>History:</b>\n${c.history || c.remarks}</div>
-                    
-                    <div class="action-btns">
-                        <button class="mini-btn btn-update" onclick="toggleUpdate(${realIdx})">📞 CALL UPDATE</button>
-                        <button class="mini-btn btn-delete" onclick="deleteEntry(${realIdx})">🗑️ DELETE</button>
-                    </div>
-
-                    <div id="box-${realIdx}" class="update-section">
-                        <p style="margin:0 0 5px 0; font-size:11px;">Next Follow-up Date:</p>
-                        <input type="date" id="date-${realIdx}" value="${c.date}">
-                        <textarea id="note-${realIdx}" placeholder="What did they say?"></textarea>
-                        <button onclick="saveFollowUp(${realIdx})" class="main-save-btn" style="padding:10px;">SAVE UPDATE</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+            render(clients.filter(c => c.name.toLowerCase().includes(term) || c.phone.toString().includes(term)));
         }
 
         window.onload = syncData;
