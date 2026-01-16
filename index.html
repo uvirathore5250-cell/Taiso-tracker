@@ -3,75 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - SMART CALLS</title>
+    <title>TAISO CRM - PRO</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; --today: #2196F3; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; padding-top: 80px; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; padding-bottom: 80px; }
         
-        .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); display: flex; gap: 5px; }
-        .search-box input { flex: 5; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
-        .search-btn { flex: 1; background: var(--neon); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        /* Header & Navigation */
+        .header { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 15px; text-align: center; border-bottom: 2px solid var(--neon); z-index: 1000; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; display: flex; border-top: 2px solid var(--neon); z-index: 1000; }
+        .nav-item { flex: 1; padding: 15px; text-align: center; color: #777; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .nav-item.active { color: var(--neon); background: #222; border-top: 3px solid var(--neon); }
 
-        .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #777; font-weight: bold; }
-        .section-header { border-left: 4px solid var(--neon); padding-left: 10px; margin: 20px 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .content-page { display: none; padding-top: 70px; }
+        .content-page.active { display: block; }
+
+        /* Search Box */
+        .search-box { display: flex; gap: 5px; margin-bottom: 15px; }
+        .search-box input { flex: 5; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; outline: none; }
+        .search-btn { flex: 1; background: var(--neon); border: none; border-radius: 8px; font-size: 18px; }
+
+        /* UI Elements */
+        .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .main-save-btn { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        
+        .section-header { border-left: 4px solid var(--neon); padding-left: 10px; margin: 20px 0 10px 0; font-size: 14px; color: var(--neon); }
         .today-header { border-left-color: var(--today); color: var(--today); }
 
-        .input-group { background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid #222; margin-bottom: 20px; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; }
+        .history-box { font-size: 12px; background: #000; padding: 10px; border-radius: 8px; margin: 10px 0; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
         
-        .main-save-btn { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 5px; cursor: pointer; }
-
-        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; border-left: 4px solid transparent; }
-        .is-today { border-left-color: var(--today); background: #0a111a; }
-        .history-box { font-size: 12px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
-        
-        .action-btns { display: flex; gap: 8px; margin-top: 12px; }
-        .mini-btn { flex: 1; padding: 12px 5px; font-size: 11px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; text-align: center; }
+        .action-btns { display: flex; gap: 8px; }
+        .mini-btn { flex: 1; padding: 12px 5px; font-size: 11px; border-radius: 8px; border: none; font-weight: bold; }
         .btn-update { background: #333; color: #fff; border: 1px solid var(--neon); }
         .btn-delete { background: none; border: 1px solid var(--danger); color: var(--danger); }
-
+        
         .update-section { background: #1a1a1a; padding: 12px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
+        .status-bar { text-align: center; font-size: 11px; color: #777; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search Client...">
-        <button class="search-btn" onclick="filterClients()">🔍</button>
+    <div class="header">
+        <b style="color: var(--neon); font-size: 20px;">TAISO CRM</b>
+        <div id="syncStatus" class="status-bar">Syncing...</div>
     </div>
 
-    <h2 style="color: var(--neon); text-align:center; margin-top:10px;">TAISO CRM</h2>
-    <div id="syncStatus" class="status-bar">Connecting...</div>
-
-    <div class="input-group">
-        <h4 style="margin:0; color:var(--neon)">+ New Inquiry</h4>
-        <input type="text" id="name" placeholder="Client Name">
-        <input type="tel" id="phone" placeholder="Phone Number">
-        <input type="date" id="visitDate">
-        <textarea id="initialNote" placeholder="Initial Remarks..."></textarea>
-        <button onclick="addClient()" id="saveBtn" class="main-save-btn">Save to Cloud</button>
+    <div id="page-home" class="content-page active">
+        <div class="input-group">
+            <h3 style="margin:0 0 15px 0; color:var(--neon)">Add New Inquiry</h3>
+            <input type="text" id="name" placeholder="Client Name">
+            <input type="tel" id="phone" placeholder="Phone Number">
+            <input type="date" id="visitDate">
+            <textarea id="initialNote" placeholder="Initial Remarks..."></textarea>
+            <button onclick="addClient()" id="saveBtn" class="main-save-btn">SAVE & SYNC</button>
+        </div>
+        <p style="text-align:center; color:#555; font-size:12px;">Go to 'CALL' tab to see entries</p>
     </div>
 
-    <div id="todayList"></div>
-    <div id="allList"></div>
+    <div id="page-call" class="content-page">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search by Name/Phone..." onkeyup="filterClients()">
+            <button class="search-btn">🔍</button>
+        </div>
+        
+        <div id="todayList"></div>
+        <div id="allList"></div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchPage('home', this)">➕ ADD NEW</div>
+        <div class="nav-item" onclick="switchPage('call', this)">📞 CALL</div>
+    </div>
 
     <script>
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
 
+        function switchPage(pageId, el) {
+            document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            el.classList.add('active');
+            if(pageId === 'call') syncData();
+        }
+
         async function syncData() {
-            const status = document.getElementById('syncStatus');
             try {
                 const response = await fetch(scriptURL + '?t=' + new Date().getTime());
                 const data = await response.json();
                 if(Array.isArray(data)) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    status.innerText = "✅ Live Sync: " + new Date().toLocaleTimeString();
+                    document.getElementById('syncStatus').innerText = "✅ Synced: " + new Date().toLocaleTimeString();
                     render();
                 }
             } catch(e) {
-                status.innerText = "⚠️ Offline Mode";
+                document.getElementById('syncStatus').innerText = "⚠️ Offline";
                 render();
             }
         }
@@ -84,14 +112,15 @@
             if(name && date) {
                 const ts = new Date().toLocaleString('en-IN');
                 const payload = { name, phone, date, remarks: note, history: `[${ts}] ${note}` };
+                document.getElementById('saveBtn').innerText = "Syncing...";
                 fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-                .then(() => { syncData(); document.getElementById('name').value=''; document.getElementById('phone').value=''; document.getElementById('initialNote').value=''; });
-            }
-        }
-
-        function toggleUpdate(idx) {
-            const box = document.getElementById(`box-${idx}`);
-            box.style.display = box.style.display === 'block' ? 'none' : 'block';
+                .then(() => { 
+                    alert("Saved Successfully!");
+                    document.getElementById('name').value=''; document.getElementById('phone').value=''; document.getElementById('initialNote').value='';
+                    document.getElementById('saveBtn').innerText = "SAVE & SYNC";
+                    syncData();
+                });
+            } else { alert("Please fill Name and Date"); }
         }
 
         function saveFollowUp(idx) {
@@ -102,7 +131,7 @@
                 const ts = new Date().toLocaleString('en-IN');
                 const newHistory = client.history + `\n| [${ts}] ${updateNote}`;
                 const payload = { name: client.name, phone: client.phone, date: nextDate, remarks: updateNote, history: newHistory };
-                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).then(() => { alert("Updated!"); syncData(); });
+                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).then(() => { alert("Call Log Saved!"); syncData(); });
             }
         }
 
@@ -111,28 +140,28 @@
             const allContainer = document.getElementById('allList');
             const todayStr = new Date().toISOString().split('T')[0];
 
-            let todayHtml = `<div class="section-header today-header">📞 Today's Tasks (Follow-ups)</div>`;
-            let allHtml = `<div class="section-header">📂 All Inquiries</div>`;
+            let todayHtml = `<div class="section-header today-header">📞 TODAY'S CALLING LIST</div>`;
+            let allHtml = `<div class="section-header">📂 ALL CALL HISTORY</div>`;
 
             let hasToday = false;
             [...data].reverse().forEach((c) => {
                 const realIdx = clients.indexOf(c);
                 const isToday = c.date === todayStr;
                 const html = `
-                    <div class="client-item ${isToday ? 'is-today' : ''}">
+                    <div class="client-item" style="${isToday ? 'border-left: 4px solid var(--today); background:#0a111a;' : ''}">
                         <div style="display:flex; justify-content:space-between;">
                             <div><b style="font-size:18px; color:var(--neon);">${c.name}</b><br><span style="font-size:13px; color:#888;">📞 ${c.phone}</span></div>
-                            <div style="text-align:right;"><span style="font-size:10px; color:#555;">Call On</span><br><b style="color:#fff;">${c.date}</b></div>
+                            <div style="text-align:right;"><span style="font-size:10px; color:#555;">Call Date</span><br><b style="color:#fff;">${c.date}</b></div>
                         </div>
                         <div class="history-box">${c.history || c.remarks}</div>
                         <div class="action-btns">
-                            <button class="mini-btn btn-update" onclick="toggleUpdate(${realIdx})">📞 UPDATE CALL</button>
+                            <button class="mini-btn btn-update" onclick="document.getElementById('box-${realIdx}').style.display='block'">📞 UPDATE CALL</button>
                             <button class="mini-btn btn-delete" onclick="if(confirm('Delete?')) { clients.splice(${realIdx},1); render(); }">🗑️ DELETE</button>
                         </div>
                         <div id="box-${realIdx}" class="update-section">
                             <input type="date" id="date-${realIdx}" value="${c.date}">
-                            <textarea id="note-${realIdx}" placeholder="What was the result of today's call?"></textarea>
-                            <button onclick="saveFollowUp(${realIdx})" class="main-save-btn">SAVE & UPDATE DATE</button>
+                            <textarea id="note-${realIdx}" placeholder="Conversation result..."></textarea>
+                            <button onclick="saveFollowUp(${realIdx})" class="main-save-btn" style="padding:10px;">SAVE RECORD</button>
                         </div>
                     </div>`;
                 
@@ -140,7 +169,7 @@
                 else { allHtml += html; }
             });
 
-            todayContainer.innerHTML = hasToday ? todayHtml : `<div class="section-header today-header">✅ No calls scheduled for today</div>`;
+            todayContainer.innerHTML = hasToday ? todayHtml : `<div class="section-header today-header">✅ No calls for today</div>`;
             allContainer.innerHTML = allHtml;
         }
 
@@ -150,7 +179,6 @@
         }
 
         window.onload = syncData;
-        setInterval(syncData, 60000);
     </script>
 </body>
 </html>
