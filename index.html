@@ -8,7 +8,6 @@
         :root { --neon: #92d050; --bg: #000; --card: #111; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; padding-top: 75px; }
         
-        /* Sticky Search */
         .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); }
         .search-box input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
 
@@ -43,30 +42,30 @@
     <div id="listContainer"></div>
 
     <script>
-        // AAPKA WEB APP URL MAINE FIX KAR DIYA HAI
+        // FIXED URL
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
 
-        // SYNC FROM GOOGLE SHEET
         async function syncData() {
             const status = document.getElementById('syncStatus');
             try {
-                const response = await fetch(scriptURL + '?t=' + new Date().getTime());
+                // cache: "no-store" taaki naya data hi load ho
+                const response = await fetch(scriptURL + '?t=' + new Date().getTime(), { cache: "no-store" });
                 const data = await response.json();
-                if(data && data.length > 0) {
+                if(data && Array.isArray(data)) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
                     status.innerText = "Last Synced: " + new Date().toLocaleTimeString();
                     status.style.color = "#92d050";
+                    render();
                 }
             } catch(e) {
                 status.innerText = "Offline Mode - Showing Local Data";
                 status.style.color = "orange";
+                render();
             }
-            render();
         }
 
-        // ADD NEW CLIENT
         function addClient() {
             const name = document.getElementById('name').value;
             const phone = document.getElementById('phone').value;
@@ -82,7 +81,6 @@
                 const history = `[${timestamp}] ${note}`;
                 const newClient = { name, phone, date, remarks: note, history: history };
                 
-                // Cloud par bhejna
                 fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newClient) })
                 .then(() => {
                     clients.unshift(newClient);
@@ -94,7 +92,7 @@
                     document.getElementById('initialNote').value = '';
                     btn.innerText = "Save & Sync";
                     btn.disabled = false;
-                    alert("Client Saved Successfully!");
+                    alert("Client Saved!");
                 })
                 .catch(() => {
                     alert("Sync Error! Data saved locally.");
@@ -103,7 +101,6 @@
             } else { alert("Please enter Name and Date!"); }
         }
 
-        // FILTER / SEARCH
         function filterClients() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const filtered = clients.filter(c => 
@@ -113,12 +110,11 @@
             render(filtered);
         }
 
-        // DISPLAY LIST
         function render(dataToDisplay = clients) {
             const container = document.getElementById('listContainer');
             container.innerHTML = `<h4>Inquiry List (${dataToDisplay.length})</h4>`;
             
-            // Latest entries sabse upar
+            // Latest entries upar dikhane ke liye reverse
             const sortedData = [...dataToDisplay].reverse();
             
             sortedData.forEach((c) => {
@@ -131,16 +127,15 @@
                     </div>
                     <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone || 'No Number'}</div>
                     <div class="history-box">
-                        <b>Full History:</b><br>${c.history ? c.history.split('|').join('<br>') : (c.remarks || 'No remarks')}
+                        <b>History:</b><br>${c.history ? c.history.split('|').join('<br>') : (c.remarks || 'No remarks')}
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // Auto Sync every 30 seconds
         window.onload = syncData;
-        setInterval(syncData, 30000);
+        setInterval(syncData, 30000); // 30 sec auto-sync
     </script>
 </body>
 </html>
