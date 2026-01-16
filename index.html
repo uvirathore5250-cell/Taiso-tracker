@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - Pro</title>
+    <title>TAISO CRM - PRO</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; padding-top: 75px; }
         
+        /* Sticky Search */
         .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); }
         .search-box input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
 
+        .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #555; }
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
         button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        button:disabled { background: #444; color: #888; }
 
         .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
-        .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; line-height: 1.5; }
-        .sync-status { text-align: center; font-size: 10px; color: #555; margin-bottom: 10px; }
+        .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -27,46 +29,44 @@
         <input type="text" id="searchInput" placeholder="🔍 Search Name or Number..." onkeyup="filterClients()">
     </div>
 
-    <h2 style="color: var(--neon); text-align:center; margin-top:20px;">TAISO CRM</h2>
-    <div id="status" class="sync-status">Syncing with Google Sheets...</div>
+    <h2 style="color: var(--neon); text-align:center;">TAISO CRM</h2>
+    <div id="syncStatus" class="status-bar">Connecting to Cloud...</div>
 
     <div class="input-group">
         <input type="text" id="name" placeholder="Client Name">
         <input type="tel" id="phone" placeholder="Phone Number">
         <input type="date" id="visitDate">
-        <textarea id="initialNote" placeholder="Conversation remarks..."></textarea>
+        <textarea id="initialNote" placeholder="Write remarks here..."></textarea>
         <button onclick="addClient()" id="saveBtn">Save & Sync</button>
     </div>
 
     <div id="listContainer"></div>
 
     <script>
-        let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
-        
-        // 🔴 APNA GOOGLE URL YAHAN PASTE KAREIN 🔴
+        // AAPKA WEB APP URL MAINE FIX KAR DIYA HAI
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
+        let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
 
-        // LIVE SYNC FUNCTION
-        async function syncFromSheet() {
-            if(!scriptURL || scriptURL.includes('YAHA_')) return;
-            const statusDiv = document.getElementById('status');
-            
+        // SYNC FROM GOOGLE SHEET
+        async function syncData() {
+            const status = document.getElementById('syncStatus');
             try {
-                // cache: "no-store" taaki staff ka data turant khinche
-                const response = await fetch(scriptURL, { cache: "no-store" });
+                const response = await fetch(scriptURL + '?t=' + new Date().getTime());
                 const data = await response.json();
-                
                 if(data && data.length > 0) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    statusDiv.innerText = "Last synced: " + new Date().toLocaleTimeString();
+                    status.innerText = "Last Synced: " + new Date().toLocaleTimeString();
+                    status.style.color = "#92d050";
                 }
             } catch(e) {
-                statusDiv.innerText = "Offline Mode - Showing Local Data";
+                status.innerText = "Offline Mode - Showing Local Data";
+                status.style.color = "orange";
             }
             render();
         }
 
+        // ADD NEW CLIENT
         function addClient() {
             const name = document.getElementById('name').value;
             const phone = document.getElementById('phone').value;
@@ -75,32 +75,35 @@
             const btn = document.getElementById('saveBtn');
 
             if(name && date) {
-                btn.innerText = "Saving...";
+                btn.innerText = "Syncing...";
                 btn.disabled = true;
 
                 const timestamp = new Date().toLocaleString('en-IN');
                 const history = `[${timestamp}] ${note}`;
                 const newClient = { name, phone, date, remarks: note, history: history };
                 
-                // Sheet mein bhejna
+                // Cloud par bhejna
                 fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newClient) })
                 .then(() => {
-                    // Local list mein turant dikhana
                     clients.unshift(newClient);
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
                     render();
                     
-                    // Reset
                     document.getElementById('name').value = '';
                     document.getElementById('phone').value = '';
                     document.getElementById('initialNote').value = '';
                     btn.innerText = "Save & Sync";
                     btn.disabled = false;
-                    alert("Client Saved to Cloud!");
+                    alert("Client Saved Successfully!");
+                })
+                .catch(() => {
+                    alert("Sync Error! Data saved locally.");
+                    btn.disabled = false;
                 });
-            } else { alert("Name and Date are required!"); }
+            } else { alert("Please enter Name and Date!"); }
         }
 
+        // FILTER / SEARCH
         function filterClients() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const filtered = clients.filter(c => 
@@ -110,31 +113,34 @@
             render(filtered);
         }
 
+        // DISPLAY LIST
         function render(dataToDisplay = clients) {
             const container = document.getElementById('listContainer');
             container.innerHTML = `<h4>Inquiry List (${dataToDisplay.length})</h4>`;
             
-            // Reverse taaki nayi entries upar dikhein
-            dataToDisplay.forEach((c) => {
+            // Latest entries sabse upar
+            const sortedData = [...dataToDisplay].reverse();
+            
+            sortedData.forEach((c) => {
                 const div = document.createElement('div');
                 div.className = 'client-item';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <b style="font-size:18px;">${c.name}</b>
-                        <span style="color:var(--neon); font-size:12px;">Visit: ${c.date}</span>
+                        <b style="font-size:18px;">${c.name || 'No Name'}</b>
+                        <span style="color:var(--neon); font-size:12px;">Next: ${c.date || 'N/A'}</span>
                     </div>
-                    <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone}</div>
+                    <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone || 'No Number'}</div>
                     <div class="history-box">
-                        <b>History:</b><br>${c.history ? c.history.split('|').join('<br>') : 'No remarks'}
+                        <b>Full History:</b><br>${c.history ? c.history.split('|').join('<br>') : (c.remarks || 'No remarks')}
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // App khulne par aur har 30 second mein auto-sync
-        window.onload = syncFromSheet;
-        setInterval(syncFromSheet, 30000); 
+        // Auto Sync every 30 seconds
+        window.onload = syncData;
+        setInterval(syncData, 30000);
     </script>
 </body>
 </html>
