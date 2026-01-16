@@ -11,12 +11,12 @@
         .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); }
         .search-box input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
 
-        .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #555; }
+        .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #777; font-weight: bold; }
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
         button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        button:disabled { background: #444; color: #888; }
+        button:active { opacity: 0.7; }
 
         .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
         .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; line-height: 1.4; }
@@ -29,7 +29,7 @@
     </div>
 
     <h2 style="color: var(--neon); text-align:center;">TAISO CRM</h2>
-    <div id="syncStatus" class="status-bar">Connecting to Cloud...</div>
+    <div id="syncStatus" class="status-bar">🔄 Initializing Sync...</div>
 
     <div class="input-group">
         <input type="text" id="name" placeholder="Client Name">
@@ -42,25 +42,23 @@
     <div id="listContainer"></div>
 
     <script>
-        // FIXED URL
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
 
         async function syncData() {
             const status = document.getElementById('syncStatus');
             try {
-                // cache: "no-store" taaki naya data hi load ho
                 const response = await fetch(scriptURL + '?t=' + new Date().getTime(), { cache: "no-store" });
                 const data = await response.json();
-                if(data && Array.isArray(data)) {
+                if(Array.isArray(data)) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    status.innerText = "Last Synced: " + new Date().toLocaleTimeString();
+                    status.innerText = "✅ Cloud Connected - Last Synced: " + new Date().toLocaleTimeString();
                     status.style.color = "#92d050";
                     render();
                 }
             } catch(e) {
-                status.innerText = "Offline Mode - Showing Local Data";
+                status.innerText = "⚠️ Offline Mode - Local Data Shown";
                 status.style.color = "orange";
                 render();
             }
@@ -74,7 +72,7 @@
             const btn = document.getElementById('saveBtn');
 
             if(name && date) {
-                btn.innerText = "Syncing...";
+                btn.innerText = "Pushing to Cloud...";
                 btn.disabled = true;
 
                 const timestamp = new Date().toLocaleString('en-IN');
@@ -92,13 +90,13 @@
                     document.getElementById('initialNote').value = '';
                     btn.innerText = "Save & Sync";
                     btn.disabled = false;
-                    alert("Client Saved!");
+                    alert("Sync Successful!");
                 })
                 .catch(() => {
-                    alert("Sync Error! Data saved locally.");
+                    alert("Network Error - Saved Locally");
                     btn.disabled = false;
                 });
-            } else { alert("Please enter Name and Date!"); }
+            } else { alert("Name and Date are required!"); }
         }
 
         function filterClients() {
@@ -114,7 +112,6 @@
             const container = document.getElementById('listContainer');
             container.innerHTML = `<h4>Inquiry List (${dataToDisplay.length})</h4>`;
             
-            // Latest entries upar dikhane ke liye reverse
             const sortedData = [...dataToDisplay].reverse();
             
             sortedData.forEach((c) => {
@@ -123,11 +120,11 @@
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <b style="font-size:18px;">${c.name || 'No Name'}</b>
-                        <span style="color:var(--neon); font-size:12px;">Next: ${c.date || 'N/A'}</span>
+                        <span style="color:var(--neon); font-size:12px;">Next Visit: ${c.date || 'N/A'}</span>
                     </div>
                     <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone || 'No Number'}</div>
                     <div class="history-box">
-                        <b>History:</b><br>${c.history ? c.history.split('|').join('<br>') : (c.remarks || 'No remarks')}
+                        <b>Record History:</b><br>${c.history ? c.history.split('|').join('<br>') : (c.remarks || 'No remarks')}
                     </div>
                 `;
                 container.appendChild(div);
@@ -135,7 +132,7 @@
         }
 
         window.onload = syncData;
-        setInterval(syncData, 30000); // 30 sec auto-sync
+        setInterval(syncData, 30000); 
     </script>
 </body>
 </html>
