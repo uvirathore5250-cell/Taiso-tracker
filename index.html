@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TAISO CRM - PRO</title>
     <style>
-        :root { --neon: #92d050; --bg: #000; --card: #111; }
+        :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; padding-top: 85px; }
         
-        /* Fixed Search Bar with Button */
         .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); display: flex; gap: 8px; }
         .search-box input { flex: 1; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
         .search-btn { width: auto !important; background: var(--neon); color: #000; padding: 0 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 0 !important; }
@@ -18,10 +17,13 @@
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
         button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
-        button:active { opacity: 0.7; }
-
-        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
+        
+        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; position: relative; }
         .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; line-height: 1.4; }
+        
+        /* Delete Button Style */
+        .delete-btn { background: none; border: 1px solid var(--danger); color: var(--danger); padding: 5px 10px; font-size: 10px; width: auto; margin-top: 10px; border-radius: 5px; cursor: pointer; }
+        .delete-btn:hover { background: var(--danger); color: #fff; }
     </style>
 </head>
 <body>
@@ -56,12 +58,12 @@
                 if(Array.isArray(data)) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    status.innerText = "✅ Cloud Connected - Last Synced: " + new Date().toLocaleTimeString();
+                    status.innerText = "✅ Cloud Connected - " + new Date().toLocaleTimeString();
                     status.style.color = "#92d050";
                     render();
                 }
             } catch(e) {
-                status.innerText = "⚠️ Offline Mode - Local Data Shown";
+                status.innerText = "⚠️ Offline Mode";
                 status.style.color = "orange";
                 render();
             }
@@ -75,40 +77,38 @@
             const btn = document.getElementById('saveBtn');
 
             if(name && date) {
-                btn.innerText = "Pushing to Cloud...";
+                btn.innerText = "Syncing...";
                 btn.disabled = true;
-
                 const timestamp = new Date().toLocaleString('en-IN');
                 const history = `[${timestamp}] ${note}`;
                 const newClient = { name, phone, date, remarks: note, history: history };
                 
                 fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newClient) })
                 .then(() => {
-                    clients.unshift(newClient);
-                    localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    render();
-                    
+                    syncData();
                     document.getElementById('name').value = '';
                     document.getElementById('phone').value = '';
                     document.getElementById('initialNote').value = '';
                     btn.innerText = "Save & Sync";
                     btn.disabled = false;
-                    alert("Sync Successful!");
-                })
-                .catch(() => {
-                    alert("Network Error - Saved Locally");
-                    btn.disabled = false;
                 });
-            } else { alert("Name and Date are required!"); }
+            } else { alert("Enter Name & Date!"); }
         }
 
-        // SEARCH TRIGGERED ONLY ON BUTTON CLICK
+        // DELETE FUNCTION (Client side hidden delete)
+        function deleteEntry(index) {
+            if(confirm("Are you sure you want to delete this client?")) {
+                // Note: Ye sirf view se delete karega. 
+                // Google Sheet se delete karne ke liye row number chahiye hota hai.
+                clients.splice(index, 1);
+                localStorage.setItem('taisoCRMData', JSON.stringify(clients));
+                render();
+                alert("Deleted from App View. Note: Delete from Google Sheet manually to remove permanently.");
+            }
+        }
+
         function filterClients() {
             const term = document.getElementById('searchInput').value.toLowerCase();
-            if(term === "") {
-                render(clients);
-                return;
-            }
             const filtered = clients.filter(c => 
                 (c.name && c.name.toString().toLowerCase().includes(term)) || 
                 (c.phone && c.phone.toString().includes(term))
@@ -120,27 +120,28 @@
             const container = document.getElementById('listContainer');
             container.innerHTML = `<h4>Results (${dataToDisplay.length})</h4>`;
             
+            // Latest on top
             const sortedData = [...dataToDisplay].reverse();
             
-            sortedData.forEach((c) => {
+            sortedData.forEach((c, idx) => {
+                const actualIndex = clients.indexOf(c);
                 const div = document.createElement('div');
                 div.className = 'client-item';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <b style="font-size:18px;">${c.name || 'No Name'}</b>
-                        <span style="color:var(--neon); font-size:12px;">Next Visit: ${c.date || 'N/A'}</span>
+                        <span style="color:var(--neon); font-size:12px;">Next: ${c.date || 'N/A'}</span>
                     </div>
-                    <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone || 'No Number'}</div>
-                    <div class="history-box">
-                        <b>Record History:</b><br>${c.history ? c.history.split('|').join('<br>') : (c.remarks || 'No remarks')}
-                    </div>
+                    <div style="font-size:13px; color:#888;">📞 ${c.phone || 'No Number'}</div>
+                    <div class="history-box">${c.history || c.remarks || ''}</div>
+                    <button class="delete-btn" onclick="deleteEntry(${actualIndex})">DELETE ENTRY</button>
                 `;
                 container.appendChild(div);
             });
         }
 
         window.onload = syncData;
-        setInterval(syncData, 60000); // 1 min sync
+        setInterval(syncData, 60000);
     </script>
 </body>
 </html>
