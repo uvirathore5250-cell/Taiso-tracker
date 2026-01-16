@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - FINAL FIX</title>
+    <title>TAISO CRM - SMART FILTERS</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; --done: #4CAF50; --blue: #2196F3; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 0; margin: 0; padding-bottom: 85px; }
@@ -20,20 +20,20 @@
         .tab-done.active { border-color: var(--done); color: var(--done); }
         .tab-all.active { border-color: var(--blue); color: var(--blue); }
         .client-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; }
-        .history-box { font-size: 12px; background: #000; padding: 10px; border-radius: 8px; margin: 10px 0; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
+        .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin: 10px 0; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
         input, textarea, .save-btn { width: 100%; padding: 14px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; }
         .save-btn { background: var(--neon); color: #000; font-weight: bold; border: none; cursor: pointer; }
-        .update-form { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
         .act-btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; border: 1px solid var(--neon); background: #333; color: #fff; cursor: pointer; }
+        .update-form { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-    <div class="header"><b style="letter-spacing: 2px;">TAISO CRM</b></div>
+    <div class="header"><b>TAISO CRM</b></div>
 
     <div id="page-add" class="content-page active">
         <div style="background:var(--card); padding:20px; border-radius:20px;">
-            <h3 style="color:var(--neon)">New Inquiry</h3>
+            <h3 style="color:var(--neon)">Add New Inquiry</h3>
             <input type="text" id="name" placeholder="Name">
             <input type="tel" id="phone" placeholder="Phone">
             <input type="date" id="visitDate">
@@ -44,9 +44,9 @@
 
     <div id="page-call" class="content-page">
         <div class="call-tabs">
-            <button class="tab-btn tab-pending active" onclick="setCallFilter('pending', this)">⚠️ PENDING</button>
-            <button class="tab-btn tab-done" onclick="setCallFilter('done', this)">✅ DONE</button>
-            <button class="tab-btn tab-all" onclick="setCallFilter('all', this)">📂 ALL</button>
+            <button id="btn-pending" class="tab-btn tab-pending active" onclick="setCallFilter('pending')">⚠️ PENDING</button>
+            <button id="btn-done" class="tab-btn tab-done" onclick="setCallFilter('done')">✅ DONE</button>
+            <button id="btn-all" class="tab-btn tab-all" onclick="setCallFilter('all')">📂 ALL</button>
         </div>
         <div id="listContainer"></div>
     </div>
@@ -58,7 +58,7 @@
 
     <script>
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
-        let clients = JSON.parse(localStorage.getItem('crmData')) || [];
+        let clients = [];
         let callFilter = 'pending';
 
         function nav(p, el) {
@@ -69,73 +69,67 @@
             if(p === 'call') sync();
         }
 
-        function setCallFilter(f, el) {
+        function setCallFilter(f) {
             callFilter = f;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
+            document.getElementById('btn-' + f).classList.add('active');
             render();
         }
 
         async function sync() {
             try {
                 const res = await fetch(scriptURL + '?t=' + Date.now());
-                const data = await res.json();
-                if(Array.isArray(data)) {
-                    clients = data;
-                    localStorage.setItem('crmData', JSON.stringify(clients));
-                    render();
-                }
-            } catch(e) { render(); }
+                clients = await res.json();
+                render();
+            } catch(e) { console.log("Sync Error"); }
         }
 
         function addClient() {
             const n = document.getElementById('name').value, p = document.getElementById('phone').value, d = document.getElementById('visitDate').value, nt = document.getElementById('note').value;
             if(n && d) {
-                const ts = new Date().toLocaleString('en-IN');
-                const payload = { name:n, phone:p, date:d, remarks:nt, history: `[${ts}] Initial: ${nt}` };
+                const ts = new Date().toLocaleDateString('en-IN');
+                const fullTs = new Date().toLocaleString('en-IN');
+                const payload = { name:n, phone:p, date:d, remarks:nt, history: `[${fullTs}] Initial: ${nt}` };
                 fetch(scriptURL, { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).then(() => {
-                    alert("Saved!"); sync();
+                    alert("Entry Saved!"); sync();
                 });
             }
         }
 
         function updateCall(idx) {
             const nextD = document.getElementById(`d-${idx}`).value, msg = document.getElementById(`m-${idx}`).value;
-            const tsNow = new Date().toLocaleString('en-IN');
-            const todayKey = new Date().toLocaleDateString('en-IN');
-            const newHistory = clients[idx].history + `\n| [${tsNow}] DONE: ${msg}`;
+            const fullTs = new Date().toLocaleString('en-IN');
+            const newHistory = clients[idx].history + `\n| [${fullTs}] DONE: ${msg}`;
             const payload = { name: clients[idx].name, phone: clients[idx].phone, date: nextD, remarks: msg, history: newHistory };
             fetch(scriptURL, { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).then(() => { sync(); });
         }
 
         function render() {
             const cont = document.getElementById('listContainer');
-            const todayDate = new Date().toISOString().split('T')[0];
-            const todayKey = new Date().toLocaleDateString('en-IN');
+            // Hum sirf date ka 'DD/MM/YYYY' hissa match karenge
+            const todayKey = new Date().toLocaleDateString('en-IN'); 
             cont.innerHTML = '';
 
             [...clients].reverse().forEach((c) => {
                 const rIdx = clients.indexOf(c);
-                const isInitialToday = c.history && c.history.includes(`[${todayKey}] Initial:`);
-                const isUpdatedToday = c.history && c.history.includes(`[${todayKey}] DONE:`);
                 
-                // IMPROVED FILTER: Aaj ki nayi entry ya aaj ka update dono DONE mein jayenge
-                const isDoneToday = isInitialToday || isUpdatedToday;
+                // Sabse simple check: Kya history mein aaj ki date maujood hai?
+                const actionTakenToday = c.history && c.history.includes(todayKey);
 
-                if(callFilter === 'pending' && isDoneToday) return;
-                if(callFilter === 'done' && !isDoneToday) return;
+                if(callFilter === 'pending' && actionTakenToday) return;
+                if(callFilter === 'done' && !actionTakenToday) return;
 
                 const div = document.createElement('div');
                 div.className = 'client-card';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between;">
-                        <b>${c.name}</b> <b style="color:var(--neon);">${c.date}</b>
+                        <b>${c.name}</b> <small style="color:var(--neon);">${c.date.split('T')[0]}</small>
                     </div>
                     <div class="history-box">${c.history}</div>
                     <button class="act-btn" onclick="document.getElementById('f-${rIdx}').style.display='block'">📞 UPDATE CALL</button>
                     <div id="f-${rIdx}" class="update-form">
-                        <input type="date" id="d-${rIdx}" value="${c.date}">
-                        <textarea id="m-${rIdx}" placeholder="Update notes..."></textarea>
+                        <input type="date" id="d-${rIdx}" value="${c.date.split('T')[0]}">
+                        <textarea id="m-${rIdx}" placeholder="Update..."></textarea>
                         <button onclick="updateCall(${rIdx})" class="save-btn">SAVE COMPLETE</button>
                     </div>
                 `;
