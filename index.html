@@ -3,177 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - SMART FILTERS</title>
+    <title>TAISO CRM - SMART CALLS</title>
     <style>
-        :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; --done: #4CAF50; --today: #2196F3; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 10px; margin: 0; padding-bottom: 85px; }
+        :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; --done: #4CAF50; --blue: #2196F3; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 0; margin: 0; padding-bottom: 85px; }
         
-        .header { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 15px; text-align: center; border-bottom: 2px solid var(--neon); z-index: 1000; }
-        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; display: flex; border-top: 2px solid var(--neon); z-index: 1000; }
-        .nav-item { flex: 1; padding: 15px; text-align: center; color: #777; font-weight: bold; cursor: pointer; }
-        .nav-item.active { color: var(--neon); background: #222; border-top: 3px solid var(--neon); }
+        /* Fixed Header */
+        .header { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 15px 0; text-align: center; border-bottom: 2px solid var(--neon); z-index: 1000; }
+        .status-sync { font-size: 10px; color: var(--neon); margin-top: 5px; opacity: 0.8; }
 
-        .content-page { display: none; padding-top: 75px; }
+        /* Navigation Bottom */
+        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; display: flex; border-top: 1px solid #333; z-index: 1000; }
+        .nav-item { flex: 1; padding: 15px; text-align: center; color: #666; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .nav-item.active { color: var(--neon); border-top: 3px solid var(--neon); background: #222; }
+
+        .content-page { display: none; padding: 85px 15px 20px 15px; }
         .content-page.active { display: block; }
 
-        /* Filter Options (Alag-Alag Buttons) */
-        .filter-container { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
-        .filter-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: #fff; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-        .filter-btn.active { border-color: var(--neon); background: #1a1a1a; color: var(--neon); }
-        .filter-btn.pending.active { border-color: var(--danger); color: var(--danger); }
-        .filter-btn.done.active { border-color: var(--done); color: var(--done); }
+        /* Call Sub-Tabs (Alag Alag Options) */
+        .call-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: #fff; font-size: 12px; font-weight: bold; }
+        .tab-btn.active { background: #222; border-width: 2px; }
+        .tab-pending.active { border-color: var(--danger); color: var(--danger); }
+        .tab-done.active { border-color: var(--done); color: var(--done); }
+        .tab-all.active { border-color: var(--blue); color: var(--blue); }
 
-        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; }
+        /* Card Styling */
+        .client-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; position: relative; }
         .history-box { font-size: 12px; background: #000; padding: 10px; border-radius: 8px; margin: 10px 0; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
         
-        .action-btns { display: flex; gap: 8px; }
-        .mini-btn { flex: 1; padding: 12px 5px; font-size: 11px; border-radius: 8px; border: none; font-weight: bold; }
-        .btn-update { background: #333; color: #fff; border: 1px solid var(--neon); }
-        .btn-delete { background: none; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-row { display: flex; gap: 8px; }
+        .act-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; border: none; font-size: 11px; cursor: pointer; }
+        .btn-upd { background: #333; color: #fff; border: 1px solid var(--neon); }
+        .btn-del { background: none; border: 1px solid var(--danger); color: var(--danger); }
 
-        input, textarea, .main-save-btn { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        .main-save-btn { background: var(--neon); color: #000; font-weight: bold; border: none; }
-        .update-section { background: #1a1a1a; padding: 12px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
+        input, textarea, .save-btn { width: 100%; padding: 14px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .save-btn { background: var(--neon); color: #000; font-weight: bold; border: none; margin-top: 10px; }
+        .update-form { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <b style="color: var(--neon); font-size: 18px;">TAISO CRM</b>
-        <div id="syncStatus" style="font-size:10px; color:#555;">Connecting...</div>
+        <b style="letter-spacing: 2px;">TAISO CRM</b>
+        <div id="syncStatus" class="status-sync">Connecting...</div>
     </div>
 
-    <div id="page-home" class="content-page active">
-        <div style="background:var(--card); padding:20px; border-radius:20px; border:1px solid #222; margin:10px;">
-            <h3 style="margin:0 0 15px 0; color:var(--neon)">+ New Inquiry</h3>
+    <div id="page-add" class="content-page active">
+        <div style="background:var(--card); padding:20px; border-radius:20px; border:1px solid #222;">
+            <h3 style="margin-top:0; color:var(--neon)">Add Inquiry</h3>
             <input type="text" id="name" placeholder="Client Name">
             <input type="tel" id="phone" placeholder="Phone Number">
             <input type="date" id="visitDate">
-            <textarea id="initialNote" placeholder="Remarks..."></textarea>
-            <button onclick="addClient()" id="saveBtn" class="main-save-btn">SAVE CLIENT</button>
+            <textarea id="note" placeholder="Requirements..."></textarea>
+            <button onclick="addClient()" id="mainBtn" class="save-btn">SAVE & CLOUD SYNC</button>
         </div>
     </div>
 
-    <div id="page-call" class="content-page" style="padding: 10px;">
-        <div class="filter-container">
-            <button class="filter-btn active" onclick="setFilter('all', this)">📂 ALL</button>
-            <button class="filter-btn pending" onclick="setFilter('pending', this)">⚠️ PENDING</button>
-            <button class="filter-btn done" onclick="setFilter('done', this)">✅ DONE TODAY</button>
+    <div id="page-call" class="content-page">
+        <div class="call-tabs">
+            <button class="tab-btn tab-pending active" onclick="setCallFilter('pending', this)">⚠️ PENDING</button>
+            <button class="tab-btn tab-done" onclick="setCallFilter('done', this)">✅ DONE</button>
+            <button class="tab-btn tab-all" onclick="setCallFilter('all', this)">📂 ALL</button>
         </div>
 
-        <input type="text" id="searchInput" placeholder="🔍 Search name..." onkeyup="filterClients()" style="margin-bottom:15px; border-color:var(--neon)">
+        <input type="text" id="search" placeholder="🔍 Search name or phone..." onkeyup="render()" style="margin-bottom:15px; border-color:var(--neon)">
         <div id="listContainer"></div>
     </div>
 
     <div class="nav-bar">
-        <div class="nav-item active" onclick="switchPage('home', this)">➕ ADD</div>
-        <div class="nav-item" onclick="switchPage('call', this)">📞 CALLS</div>
+        <div class="nav-item active" onclick="nav('add', this)">➕ ADD</div>
+        <div class="nav-item" onclick="nav('call', this)">📞 CALLS</div>
     </div>
 
     <script>
         const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
-        let clients = [];
-        let currentFilter = 'all';
+        let clients = JSON.parse(localStorage.getItem('crmData')) || [];
+        let callFilter = 'pending';
 
-        function switchPage(pageId, el) {
-            document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
+        function nav(p, el) {
+            document.querySelectorAll('.content-page').forEach(pg => pg.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(nv => nv.classList.remove('active'));
+            document.getElementById('page-' + p).classList.add('active');
             el.classList.add('active');
-            if(pageId === 'call') syncData();
+            if(p === 'call') sync();
         }
 
-        function setFilter(type, el) {
-            currentFilter = type;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        function setCallFilter(f, el) {
+            callFilter = f;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
             render();
         }
 
-        async function syncData() {
+        async function sync() {
             try {
-                const response = await fetch(scriptURL + '?t=' + new Date().getTime());
-                const data = await response.json();
+                const res = await fetch(scriptURL + '?t=' + Date.now());
+                const data = await res.json();
                 if(Array.isArray(data)) {
                     clients = data;
-                    document.getElementById('syncStatus').innerText = "✅ Live: " + new Date().toLocaleTimeString();
+                    localStorage.setItem('crmData', JSON.stringify(clients));
+                    document.getElementById('syncStatus').innerText = "✅ Online: " + new Date().toLocaleTimeString();
                     render();
                 }
             } catch(e) { document.getElementById('syncStatus').innerText = "⚠️ Offline"; render(); }
         }
 
         function addClient() {
-            const name = document.getElementById('name').value;
-            const phone = document.getElementById('phone').value;
-            const date = document.getElementById('visitDate').value;
-            const note = document.getElementById('initialNote').value;
-            if(name && date) {
+            const n = document.getElementById('name').value, p = document.getElementById('phone').value, d = document.getElementById('visitDate').value, nt = document.getElementById('note').value;
+            if(n && d) {
                 const ts = new Date().toLocaleString('en-IN');
-                const payload = { name, phone, date, remarks: note, history: `[${ts}] ${note}` };
-                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
-                .then(() => { alert("Saved!"); syncData(); });
+                const payload = { name:n, phone:p, date:d, remarks:nt, history: `[${ts}] Initial: ${nt}` };
+                document.getElementById('mainBtn').innerText = "Syncing...";
+                fetch(scriptURL, { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).then(() => {
+                    alert("Client Added!"); document.getElementById('name').value=''; document.getElementById('note').value='';
+                    document.getElementById('mainBtn').innerText = "SAVE & CLOUD SYNC"; sync();
+                });
             }
         }
 
-        function saveFollowUp(idx) {
-            const client = clients[idx];
-            const nextDate = document.getElementById(`date-${idx}`).value;
-            const updateNote = document.getElementById(`note-${idx}`).value;
-            if(nextDate && updateNote) {
-                const ts = new Date().toLocaleString('en-IN');
-                const tsToday = new Date().toLocaleDateString('en-IN');
-                const newHistory = client.history + `\n| [${ts}] DONE: ${updateNote}`;
-                const payload = { name: client.name, phone: client.phone, date: nextDate, remarks: updateNote, history: newHistory };
-                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).then(() => { syncData(); });
-            }
+        function updateCall(idx) {
+            const nextD = document.getElementById(`d-${idx}`).value, msg = document.getElementById(`m-${idx}`).value;
+            if(!nextD || !msg) return alert("Fill all details");
+            
+            const tsNow = new Date().toLocaleString('en-IN');
+            const todayKey = new Date().toLocaleDateString('en-IN');
+            const newHistory = clients[idx].history + `\n| [${tsNow}] DONE: ${msg}`;
+            
+            const payload = { name: clients[idx].name, phone: clients[idx].phone, date: nextD, remarks: msg, history: newHistory };
+            fetch(scriptURL, { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).then(() => { sync(); });
         }
 
         function render() {
-            const container = document.getElementById('listContainer');
-            const todayStr = new Date().toISOString().split('T')[0];
-            const tsToday = new Date().toLocaleDateString('en-IN');
-            container.innerHTML = '';
+            const cont = document.getElementById('listContainer'), term = document.getElementById('search').value.toLowerCase();
+            const today = new Date().toISOString().split('T')[0], todayKey = new Date().toLocaleDateString('en-IN');
+            cont.innerHTML = '';
 
             [...clients].reverse().forEach((c) => {
-                const realIdx = clients.indexOf(c);
-                const isToday = c.date === todayStr;
-                const wasUpdatedToday = c.history && c.history.includes(`[${tsToday}] DONE:`);
-
-                // Filter Logic
-                if (currentFilter === 'pending' && !(isToday && !wasUpdatedToday)) return;
-                if (currentFilter === 'done' && !wasUpdatedToday) return;
+                const rIdx = clients.indexOf(c);
+                const isToday = c.date === today;
+                const isDone = c.history && c.history.includes(`[${todayKey}] DONE:`);
+                
+                // Smart Logical Filter
+                if(callFilter === 'pending' && !(isToday && !isDone)) return;
+                if(callFilter === 'done' && !isDone) return;
+                if(term && !c.name.toLowerCase().includes(term) && !c.phone.toString().includes(term)) return;
 
                 const div = document.createElement('div');
-                div.className = 'client-item';
+                div.className = 'client-card';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between;">
-                        <div><b style="font-size:17px; color:var(--neon);">${c.name}</b><br><small style="color:#777;">${c.phone}</small></div>
-                        <div style="text-align:right;"><small style="color:#555;">Call On</small><br><b>${c.date}</b></div>
+                        <b>${c.name} <small style="display:block; color:#666; font-weight:normal;">${c.phone}</small></b>
+                        <b style="color:var(--neon); font-size:12px;">${c.date}</b>
                     </div>
-                    <div class="history-box">${c.history || c.remarks}</div>
-                    <div class="action-btns">
-                        <button class="mini-btn btn-update" onclick="document.getElementById('box-${realIdx}').style.display='block'">📞 UPDATE</button>
-                        <button class="mini-btn btn-delete" onclick="if(confirm('Delete?')){clients.splice(${realIdx},1);render();}">🗑️</button>
+                    <div class="history-box">${c.history}</div>
+                    <div class="btn-row">
+                        <button class="act-btn btn-upd" onclick="document.getElementById('f-${rIdx}').style.display='block'">📞 UPDATE CALL</button>
+                        <button class="act-btn btn-del" onclick="if(confirm('Delete?')){clients.splice(${rIdx},1);render();}">🗑️</button>
                     </div>
-                    <div id="box-${realIdx}" class="update-section">
-                        <input type="date" id="date-${realIdx}" value="${c.date}">
-                        <textarea id="note-${realIdx}" placeholder="Conversation..."></textarea>
-                        <button onclick="saveFollowUp(${realIdx})" class="main-save-btn">SAVE UPDATE</button>
+                    <div id="f-${rIdx}" class="update-form">
+                        <small>Next Follow-up Date:</small>
+                        <input type="date" id="d-${rIdx}" value="${c.date}">
+                        <textarea id="m-${rIdx}" placeholder="What happened on call?"></textarea>
+                        <button onclick="updateCall(${rIdx})" class="save-btn">SAVE & COMPLETE</button>
                     </div>
                 `;
-                container.appendChild(div);
+                cont.appendChild(div);
             });
         }
-
-        function filterClients() {
-            const term = document.getElementById('searchInput').value.toLowerCase();
-            const originalClients = [...clients];
-            clients = originalClients.filter(c => c.name.toLowerCase().includes(term) || c.phone.toString().includes(term));
-            render();
-            clients = originalClients;
-        }
-
-        window.onload = syncData;
+        window.onload = sync;
     </script>
 </body>
 </html>
