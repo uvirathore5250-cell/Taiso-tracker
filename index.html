@@ -3,147 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO - Tracker</title>
+    <title>TAISO - CRM</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; }
-        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; padding: 15px; margin: 0; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
         
-        /* 🔔 TODAY'S ALERT */
-        #todayAlert { 
-            background: linear-gradient(45deg, #1a2310, #000);
-            border: 2px solid var(--neon); padding: 20px; border-radius: 20px; 
-            margin-bottom: 25px; display: none; box-shadow: 0 0 20px rgba(146, 208, 80, 0.3);
-            animation: glow 2s infinite alternate;
-        }
-        @keyframes glow { from { box-shadow: 0 0 10px rgba(146, 208, 80, 0.2); } to { box-shadow: 0 0 25px rgba(146, 208, 80, 0.5); } }
-
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
-        h2, h4 { margin: 0 0 15px 0; color: var(--neon); letter-spacing: 1px; text-transform: uppercase; }
-
-        input { 
-            width: 100%; padding: 15px; margin: 10px 0; 
+        input, textarea { 
+            width: 100%; padding: 12px; margin: 8px 0; 
             background: #050505; border: 1px solid #333; 
-            color: #fff; border-radius: 12px; font-size: 16px; box-sizing: border-box;
+            color: #fff; border-radius: 10px; box-sizing: border-box;
         }
         
-        button.save-btn { 
+        button { 
             width: 100%; background: var(--neon); color: #000; 
-            padding: 16px; border: none; border-radius: 12px; 
-            font-weight: 900; cursor: pointer; margin-top: 10px;
-            text-transform: uppercase; font-size: 14px;
+            padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px;
         }
 
         .client-item { 
             background: var(--card); padding: 15px; border-radius: 15px; 
-            margin-bottom: 12px; border-left: 5px solid #333;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid #222;
+            margin-bottom: 15px; border: 1px solid #222;
         }
-        .today-visit { border-left-color: var(--neon); background: #1a2310; border: 1px solid var(--neon); }
         
-        .delete-btn { background: #331111; color: #ff4444; border: 1px solid #441111; padding: 8px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; }
-        .no-visit { text-align: center; color: #555; padding: 30px; font-size: 14px; }
+        .history-box { 
+            font-size: 11px; background: #000; padding: 8px; 
+            border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444;
+        }
+
+        .action-btn { background: #222; color: var(--neon); padding: 5px 10px; border-radius: 5px; font-size: 11px; width: auto; display: inline-block; margin-right: 5px;}
     </style>
 </head>
 <body>
 
-    <header style="text-align: center; padding: 25px 0;">
-        <h2 style="font-size: 28px;">TAISO <span style="color:#fff">TRACKER</span></h2>
-        <div style="height: 2px; width: 50px; background: var(--neon); margin: 5px auto;"></div>
-    </header>
-
-    <div id="todayAlert">
-        <h4 style="color: var(--neon); display: flex; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 24px; margin-right: 12px;">🔥</span> TODAY'S VISITS
-        </h4>
-        <div id="alertNames" style="font-size: 16px; line-height: 1.8; color: #fff;"></div>
-    </div>
+    <h2 style="color: var(--neon); text-align:center;">TAISO CRM 📞</h2>
 
     <div class="input-group">
-        <h4>Schedule New Visit</h4>
+        <h4>New Inquiry</h4>
         <input type="text" id="name" placeholder="Client Name">
-        <input type="tel" id="phone" placeholder="Mobile Number">
+        <input type="tel" id="phone" placeholder="Phone Number">
         <input type="date" id="visitDate">
-        <button class="save-btn" onclick="addClient()">Add to List</button>
+        <textarea id="initialNote" placeholder="First call remarks (e.g. Budget issue, interested)"></textarea>
+        <button onclick="addClient()">Save Client</button>
     </div>
 
-    <div style="margin-top: 35px; padding-bottom: 50px;">
-        <h4 style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px;">
-            Upcoming Visits 
-            <span id="count" style="color:#666; font-size: 12px; font-weight: normal;"></span>
-        </h4>
-        <div id="listContainer"></div>
-    </div>
+    <div id="listContainer"></div>
 
     <script>
-        let clients = JSON.parse(localStorage.getItem('taisoTrackerData')) || [];
+        let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
+        const scriptURL = 'YAHA_APNA_GOOGLE_URL_DALEIN'; // Apna URL paste karein
 
         function addClient() {
             const name = document.getElementById('name').value;
             const phone = document.getElementById('phone').value;
             const date = document.getElementById('visitDate').value;
+            const note = document.getElementById('initialNote').value;
+            const timestamp = new Date().toLocaleString();
 
             if(name && date) {
-                clients.push({ id: Date.now(), name, phone, date });
-                localStorage.setItem('taisoTrackerData', JSON.stringify(clients));
-                render();
-                // Reset inputs
+                const history = `[${timestamp}] ${note}`;
+                const newClient = { id: Date.now(), name, phone, date, remarks: note, history: history };
+                
+                clients.push(newClient);
+                saveAndRender();
+                sendToSheet(newClient);
+                
+                // Reset fields
                 document.getElementById('name').value = '';
                 document.getElementById('phone').value = '';
-                document.getElementById('visitDate').value = '';
-            } else { alert("Please enter Name and Date!"); }
+                document.getElementById('initialNote').value = '';
+            }
         }
 
-        function deleteClient(id) {
-            if(confirm("Ye visit delete kar dein?")) {
-                clients = clients.filter(c => c.id !== id);
-                localStorage.setItem('taisoTrackerData', JSON.stringify(clients));
-                render();
+        function addNote(id) {
+            const extraNote = prompt("Enter call update:");
+            if(extraNote) {
+                const timestamp = new Date().toLocaleString();
+                const client = clients.find(c => c.id === id);
+                client.history += ` | [${timestamp}] ${extraNote}`;
+                client.remarks = extraNote; // Latest remark
+                saveAndRender();
+                sendToSheet(client);
             }
+        }
+
+        function sendToSheet(data) {
+            fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('taisoCRMData', JSON.stringify(clients));
+            render();
         }
 
         function render() {
-            const today = new Date().toLocaleDateString('en-CA'); // Gets YYYY-MM-DD in local time
-            const alertBox = document.getElementById('todayAlert');
-            const alertNames = document.getElementById('alertNames');
-            const listContainer = document.getElementById('listContainer');
+            const container = document.getElementById('listContainer');
+            container.innerHTML = '<h4>Client History</h4>';
             
-            let todayNames = [];
-            listContainer.innerHTML = '';
-
-            // Sort by Date (Closest date first)
-            clients.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            if(clients.length === 0) {
-                listContainer.innerHTML = '<div class="no-visit">No visits scheduled yet.</div>';
-            }
+            clients.sort((a,b) => new Date(a.date) - new Date(b.date));
 
             clients.forEach(c => {
-                const isToday = c.date === today;
-                if(isToday) todayNames.push(`✅ <b>${c.name}</b> - ${c.phone || 'No Phone'}`);
-
-                const item = document.createElement('div');
-                item.className = `client-item ${isToday ? 'today-visit' : ''}`;
-                item.innerHTML = `
-                    <div>
-                        <div style="font-weight:bold; font-size: 16px;">${c.name}</div>
-                        <div style="font-size:13px; color:#888; margin-top:4px;">📞 ${c.phone || 'N/A'}</div>
+                const div = document.createElement('div');
+                div.className = 'client-item';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>${c.name}</b>
+                        <span style="color:var(--neon); font-size:12px;">Next Visit: ${c.date}</span>
                     </div>
-                    <div style="text-align:right">
-                        <div style="font-size:12px; margin-bottom:8px; font-weight:bold; color:${isToday ? 'var(--neon)' : '#666'}">${c.date}</div>
-                        <button class="delete-btn" onclick="deleteClient(${c.id})">Remove</button>
+                    <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone}</div>
+                    <div class="history-box"><b>Latest:</b> ${c.remarks} <br><br> <b>History:</b> ${c.history}</div>
+                    <div style="margin-top:10px;">
+                        <button class="action-btn" onclick="addNote(${c.id})">+ Add Follow-up</button>
+                        <button class="action-btn" style="color:red;" onclick="deleteClient(${c.id})">Delete</button>
                     </div>
                 `;
-                listContainer.appendChild(item);
+                container.appendChild(div);
             });
+        }
 
-            document.getElementById('count').innerText = clients.length + " Visits";
-
-            if(todayNames.length > 0) {
-                alertBox.style.display = 'block';
-                alertNames.innerHTML = todayNames.join("<br>");
-            } else {
-                alertBox.style.display = 'none';
+        function deleteClient(id) {
+            if(confirm("Pakka delete karein?")) {
+                clients = clients.filter(c => c.id !== id);
+                saveAndRender();
             }
         }
 
