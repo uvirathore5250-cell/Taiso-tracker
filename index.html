@@ -3,52 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - FIXED</title>
+    <title>TAISO CRM - FINAL FIX</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; --done: #4CAF50; --blue: #2196F3; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 0; margin: 0; padding-bottom: 85px; }
-        
         .header { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 15px 0; text-align: center; border-bottom: 2px solid var(--neon); z-index: 1000; }
-        .status-sync { font-size: 10px; color: var(--neon); margin-top: 5px; opacity: 0.8; }
-
         .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: #1a1a1a; display: flex; border-top: 1px solid #333; z-index: 1000; }
-        .nav-item { flex: 1; padding: 15px; text-align: center; color: #666; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .nav-item { flex: 1; padding: 15px; text-align: center; color: #666; font-weight: bold; cursor: pointer; }
         .nav-item.active { color: var(--neon); border-top: 3px solid var(--neon); background: #222; }
-
         .content-page { display: none; padding: 85px 15px 20px 15px; }
         .content-page.active { display: block; }
-
         .call-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: #fff; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .tab-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: #fff; font-weight: bold; cursor: pointer; }
         .tab-btn.active { background: #222; border-width: 2px; }
         .tab-pending.active { border-color: var(--danger); color: var(--danger); }
         .tab-done.active { border-color: var(--done); color: var(--done); }
         .tab-all.active { border-color: var(--blue); color: var(--blue); }
-
         .client-card { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 12px; border: 1px solid #222; }
         .history-box { font-size: 12px; background: #000; padding: 10px; border-radius: 8px; margin: 10px 0; color: #ccc; border: 1px dashed #444; white-space: pre-line; }
-        
-        input, textarea, .save-btn { width: 100%; padding: 14px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        .save-btn { background: var(--neon); color: #000; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
+        input, textarea, .save-btn { width: 100%; padding: 14px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; }
+        .save-btn { background: var(--neon); color: #000; font-weight: bold; border: none; cursor: pointer; }
         .update-form { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
-        
         .act-btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; border: 1px solid var(--neon); background: #333; color: #fff; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <b style="letter-spacing: 2px;">TAISO CRM</b>
-        <div id="syncStatus" class="status-sync">Connecting...</div>
-    </div>
+    <div class="header"><b style="letter-spacing: 2px;">TAISO CRM</b></div>
 
     <div id="page-add" class="content-page active">
-        <div style="background:var(--card); padding:20px; border-radius:20px; border:1px solid #222;">
-            <h3 style="margin-top:0; color:var(--neon)">Add Inquiry</h3>
-            <input type="text" id="name" placeholder="Client Name">
-            <input type="tel" id="phone" placeholder="Phone Number">
+        <div style="background:var(--card); padding:20px; border-radius:20px;">
+            <h3 style="color:var(--neon)">New Inquiry</h3>
+            <input type="text" id="name" placeholder="Name">
+            <input type="tel" id="phone" placeholder="Phone">
             <input type="date" id="visitDate">
-            <textarea id="note" placeholder="Remarks..."></textarea>
+            <textarea id="note" placeholder="Initial Remarks..."></textarea>
             <button onclick="addClient()" id="mainBtn" class="save-btn">SAVE TO CLOUD</button>
         </div>
     </div>
@@ -59,7 +48,6 @@
             <button class="tab-btn tab-done" onclick="setCallFilter('done', this)">✅ DONE</button>
             <button class="tab-btn tab-all" onclick="setCallFilter('all', this)">📂 ALL</button>
         </div>
-        <input type="text" id="search" placeholder="🔍 Search name..." onkeyup="render()" style="margin-bottom:15px; border-color:var(--neon)">
         <div id="listContainer"></div>
     </div>
 
@@ -95,10 +83,9 @@
                 if(Array.isArray(data)) {
                     clients = data;
                     localStorage.setItem('crmData', JSON.stringify(clients));
-                    document.getElementById('syncStatus').innerText = "✅ Online: " + new Date().toLocaleTimeString();
                     render();
                 }
-            } catch(e) { document.getElementById('syncStatus').innerText = "⚠️ Offline"; render(); }
+            } catch(e) { render(); }
         }
 
         function addClient() {
@@ -106,7 +93,6 @@
             if(n && d) {
                 const ts = new Date().toLocaleString('en-IN');
                 const payload = { name:n, phone:p, date:d, remarks:nt, history: `[${ts}] Initial: ${nt}` };
-                document.getElementById('mainBtn').innerText = "Syncing...";
                 fetch(scriptURL, { method:'POST', mode:'no-cors', body:JSON.stringify(payload) }).then(() => {
                     alert("Saved!"); sync();
                 });
@@ -123,34 +109,34 @@
         }
 
         function render() {
-            const cont = document.getElementById('listContainer'), term = document.getElementById('search').value.toLowerCase();
-            const today = new Date().toISOString().split('T')[0];
+            const cont = document.getElementById('listContainer');
+            const todayDate = new Date().toISOString().split('T')[0];
             const todayKey = new Date().toLocaleDateString('en-IN');
             cont.innerHTML = '';
 
             [...clients].reverse().forEach((c) => {
                 const rIdx = clients.indexOf(c);
-                const isTodayDate = c.date === today;
-                const wasUpdatedToday = c.history && c.history.includes(`[${todayKey}] DONE:`);
-                const isActuallyDone = wasUpdatedToday || isTodayDate; 
+                const isInitialToday = c.history && c.history.includes(`[${todayKey}] Initial:`);
+                const isUpdatedToday = c.history && c.history.includes(`[${todayKey}] DONE:`);
+                
+                // IMPROVED FILTER: Aaj ki nayi entry ya aaj ka update dono DONE mein jayenge
+                const isDoneToday = isInitialToday || isUpdatedToday;
 
-                if(callFilter === 'pending' && isActuallyDone) return;
-                if(callFilter === 'done' && !isActuallyDone) return;
-                if(term && !c.name.toLowerCase().includes(term) && !c.phone.toString().includes(term)) return;
+                if(callFilter === 'pending' && isDoneToday) return;
+                if(callFilter === 'done' && !isDoneToday) return;
 
                 const div = document.createElement('div');
                 div.className = 'client-card';
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between;">
-                        <b>${c.name} <br><small style="color:#666;">${c.phone}</small></b>
-                        <b style="color:var(--neon); font-size:12px;">${c.date}</b>
+                        <b>${c.name}</b> <b style="color:var(--neon);">${c.date}</b>
                     </div>
                     <div class="history-box">${c.history}</div>
                     <button class="act-btn" onclick="document.getElementById('f-${rIdx}').style.display='block'">📞 UPDATE CALL</button>
                     <div id="f-${rIdx}" class="update-form">
                         <input type="date" id="d-${rIdx}" value="${c.date}">
-                        <textarea id="m-${rIdx}" placeholder="What happened?"></textarea>
-                        <button onclick="updateCall(${rIdx})" class="save-btn">SAVE & COMPLETE</button>
+                        <textarea id="m-${rIdx}" placeholder="Update notes..."></textarea>
+                        <button onclick="updateCall(${rIdx})" class="save-btn">SAVE COMPLETE</button>
                     </div>
                 `;
                 cont.appendChild(div);
