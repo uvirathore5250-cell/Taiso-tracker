@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO CRM - PRO</title>
+    <title>TAISO CRM - FOLLOW UP</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; --danger: #ff4444; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; padding-top: 85px; }
@@ -12,19 +12,19 @@
         .search-box input { flex: 1; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
         .search-btn { background: var(--neon); color: #000; padding: 0 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #777; font-weight: bold; }
+        .status-bar { text-align: center; font-size: 11px; margin-bottom: 10px; color: #777; }
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
         button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
         
         .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
-        .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; line-height: 1.4; white-space: pre-line; }
+        .history-box { font-size: 12px; background: #000; padding: 12px; border-radius: 8px; margin-top: 10px; color: #ccc; border: 1px dashed #444; white-space: pre-line; line-height: 1.5; }
         
-        .update-section { background: #1a1a1a; padding: 10px; border-radius: 10px; margin-top: 10px; display: none; }
-        .action-btns { display: flex; gap: 10px; margin-top: 10px; }
-        .mini-btn { flex: 1; padding: 8px; font-size: 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-update { background: #444; color: #fff; }
+        .update-section { background: #1a1a1a; padding: 12px; border-radius: 12px; margin-top: 10px; display: none; border: 1px solid #333; }
+        .action-btns { display: flex; gap: 10px; margin-top: 12px; }
+        .mini-btn { flex: 1; padding: 10px; font-size: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-call { background: #444; color: #fff; border: 1px solid var(--neon); }
         .btn-delete { background: none; border: 1px solid var(--danger); color: var(--danger); }
     </style>
 </head>
@@ -36,14 +36,14 @@
     </div>
 
     <h2 style="color: var(--neon); text-align:center;">TAISO CRM</h2>
-    <div id="syncStatus" class="status-bar">Connecting...</div>
+    <div id="syncStatus" class="status-bar">Syncing...</div>
 
-    <div class="input-group" id="mainForm">
-        <h4 style="margin:0 0 10px 0; color:var(--neon)">Add New Inquiry</h4>
-        <input type="text" id="name" placeholder="Client Name">
-        <input type="tel" id="phone" placeholder="Phone Number">
+    <div class="input-group">
+        <h4 style="margin:0 0 10px 0; color:var(--neon)">Add New Client</h4>
+        <input type="text" id="name" placeholder="Name">
+        <input type="tel" id="phone" placeholder="Phone">
         <input type="date" id="visitDate">
-        <textarea id="initialNote" placeholder="Initial Remarks..."></textarea>
+        <textarea id="initialNote" placeholder="Remarks..."></textarea>
         <button onclick="addClient()" id="saveBtn">Save to Cloud</button>
     </div>
 
@@ -54,20 +54,17 @@
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
 
         async function syncData() {
-            const status = document.getElementById('syncStatus');
             try {
-                const response = await fetch(scriptURL + '?t=' + new Date().getTime(), { cache: "no-store" });
+                const response = await fetch(scriptURL + '?t=' + new Date().getTime());
                 const data = await response.json();
                 if(Array.isArray(data)) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    status.innerText = "✅ Live Sync: " + new Date().toLocaleTimeString();
-                    status.style.color = "#92d050";
+                    document.getElementById('syncStatus').innerText = "✅ Synced: " + new Date().toLocaleTimeString();
                     render();
                 }
             } catch(e) {
-                status.innerText = "⚠️ Offline Mode";
-                status.style.color = "orange";
+                document.getElementById('syncStatus').innerText = "⚠️ Offline Mode";
                 render();
             }
         }
@@ -81,51 +78,47 @@
 
             if(name && date) {
                 btn.innerText = "Syncing..."; btn.disabled = true;
-                const timestamp = new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' });
-                const history = `[${timestamp}] ${note}`;
-                const newClient = { name, phone, date, remarks: note, history: history };
+                const ts = new Date().toLocaleString('en-IN');
+                const history = `[${ts}] ${note}`;
+                const payload = { name, phone, date, remarks: note, history: history };
                 
-                sendToSheet(newClient, () => {
-                    document.getElementById('name').value = '';
-                    document.getElementById('phone').value = '';
-                    document.getElementById('initialNote').value = '';
-                    btn.innerText = "Save to Cloud"; btn.disabled = false;
+                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+                .then(() => {
                     syncData();
+                    document.getElementById('name').value=''; 
+                    document.getElementById('phone').value='';
+                    document.getElementById('initialNote').value='';
+                    btn.innerText = "Save to Cloud"; btn.disabled = false;
                 });
-            } else { alert("Name & Date required!"); }
+            } else { alert("Name & Date are mandatory!"); }
         }
 
-        function sendToSheet(data, callback) {
-            fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
-            .then(() => { callback(); });
-        }
-
-        function showUpdateBox(idx) {
-            const box = document.getElementById(`updateBox-${idx}`);
+        function toggleUpdate(idx) {
+            const box = document.getElementById(`box-${idx}`);
             box.style.display = box.style.display === 'block' ? 'none' : 'block';
         }
 
-        function submitUpdate(idx) {
+        function saveFollowUp(idx) {
             const client = clients[idx];
-            const newDate = document.getElementById(`newDate-${idx}`).value;
-            const newNote = document.getElementById(`newNote-${idx}`).value;
+            const nextDate = document.getElementById(`date-${idx}`).value;
+            const updateNote = document.getElementById(`note-${idx}`).value;
             
-            if(!newDate || !newNote) { alert("Fill Date & Note!"); return; }
+            if(!nextDate || !updateNote) { alert("Please fill both!"); return; }
 
-            const timestamp = new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' });
-            const updatedHistory = client.history + `\n| [${timestamp}] ${newNote}`;
+            const ts = new Date().toLocaleString('en-IN');
+            const newHistory = client.history + `\n| [${ts}] ${updateNote}`;
             
-            const updatedData = {
+            const payload = {
                 name: client.name,
                 phone: client.phone,
-                date: newDate, // New Follow-up date
-                remarks: newNote,
-                history: updatedHistory
+                date: nextDate,
+                remarks: updateNote,
+                history: newHistory
             };
 
-            // Sheet mein naya row add hoga (History update ke saath)
-            sendToSheet(updatedData, () => {
-                alert("Update Saved!");
+            fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+            .then(() => {
+                alert("Follow-up Saved!");
                 syncData();
             });
         }
@@ -139,36 +132,32 @@
             render(filtered);
         }
 
-        function render(dataToDisplay = clients) {
+        function render(data = clients) {
             const container = document.getElementById('listContainer');
-            container.innerHTML = `<h4>Inquiries (${dataToDisplay.length})</h4>`;
+            container.innerHTML = '';
             
-            [...dataToDisplay].reverse().forEach((c, displayIdx) => {
-                const actualIdx = clients.indexOf(c);
+            [...data].reverse().forEach((c) => {
+                const realIdx = clients.indexOf(c);
                 const div = document.createElement('div');
                 div.className = 'client-item';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div>
-                            <b style="font-size:18px; color:var(--neon);">${c.name}</b><br>
-                            <span style="font-size:13px; color:#888;">📞 ${c.phone}</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="font-size:11px; color:#555;">Next Follow-up</span><br>
-                            <b style="color:#fff;">${c.date}</b>
-                        </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <b style="font-size:18px; color:var(--neon);">${c.name}</b>
+                        <b style="color:#fff; font-size:12px;">Next: ${c.date}</b>
                     </div>
+                    <div style="font-size:13px; color:#888;">📞 ${c.phone}</div>
                     
-                    <div class="history-box"><b>Call History:</b>\n${c.history}</div>
+                    <div class="history-box"><b>Update History:</b>\n${c.history || c.remarks}</div>
                     
                     <div class="action-btns">
-                        <button class="mini-btn btn-update" onclick="showUpdateBox(${actualIdx})">➕ ADD UPDATE / FOLLOW-UP</button>
+                        <button class="mini-btn btn-call" onclick="toggleUpdate(${realIdx})">📞 ADD CALL DETAILS</button>
                     </div>
 
-                    <div id="updateBox-${actualIdx}" class="update-section">
-                        <input type="date" id="newDate-${actualIdx}" value="${c.date}">
-                        <textarea id="newNote-${actualIdx}" placeholder="What did they say? (e.g. Will come tomorrow)"></textarea>
-                        <button onclick="submitUpdate(${actualIdx})">Save Update</button>
+                    <div id="box-${realIdx}" class="update-section">
+                        <p style="margin:0 0 5px 0; font-size:12px;">Next Follow-up Date:</p>
+                        <input type="date" id="date-${realIdx}" value="${c.date}">
+                        <textarea id="note-${realIdx}" placeholder="What did they say on call?"></textarea>
+                        <button onclick="saveFollowUp(${realIdx})">SAVE CALL RECORD</button>
                     </div>
                 `;
                 container.appendChild(div);
