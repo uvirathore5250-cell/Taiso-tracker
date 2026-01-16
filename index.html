@@ -6,54 +6,37 @@
     <title>TAISO - CRM</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; }
-        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
+        body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; padding-top: 75px; }
         
+        /* Sticky Search */
+        .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); }
+        .search-box input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
+
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
-        input, textarea { 
-            width: 100%; padding: 12px; margin: 8px 0; 
-            background: #050505; border: 1px solid #333; 
-            color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px;
-        }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
-        button { 
-            width: 100%; background: var(--neon); color: #000; 
-            padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px;
-        }
+        button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
 
-        /* Search Bar Style */
-        .search-box {
-            position: sticky; top: 10px; z-index: 100;
-            background: #1a1a1a; border: 2px solid var(--neon);
-            margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-
-        .client-item { 
-            background: var(--card); padding: 15px; border-radius: 15px; 
-            margin-bottom: 15px; border: 1px solid #222;
-        }
-        
-        .history-box { 
-            font-size: 11px; background: #000; padding: 8px; 
-            border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444;
-            max-height: 100px; overflow-y: auto;
-        }
-
-        .action-btn { background: #222; color: var(--neon); padding: 8px 12px; border-radius: 5px; font-size: 12px; width: auto; display: inline-block; margin-right: 5px; border: 1px solid #333;}
+        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; position: relative; }
+        .history-box { font-size: 11px; background: #000; padding: 8px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; max-height: 120px; overflow-y: auto; }
+        .action-btn { background: #222; color: var(--neon); padding: 8px 12px; border-radius: 5px; font-size: 12px; border: 1px solid #333; margin-top: 10px; display: inline-block; text-decoration: none; }
     </style>
 </head>
 <body>
 
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 Search Name or Number..." onkeyup="filterClients()">
+    </div>
+
     <h2 style="color: var(--neon); text-align:center;">TAISO CRM 📞</h2>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search Name or Number..." onkeyup="filterClients()">
-
     <div class="input-group">
-        <h4 style="margin-top:0;">New Inquiry</h4>
+        <h4 style="margin:0">New Inquiry</h4>
         <input type="text" id="name" placeholder="Client Name">
         <input type="tel" id="phone" placeholder="Phone Number">
         <input type="date" id="visitDate">
         <textarea id="initialNote" placeholder="Call remarks..."></textarea>
-        <button onclick="addClient()">Save to Cloud & App</button>
+        <button onclick="addClient()">Save Client</button>
     </div>
 
     <div id="listContainer"></div>
@@ -61,8 +44,22 @@
     <script>
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
         
-        // 🔴 APNA GOOGLE URL YAHAN PASTE KAREIN
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
+        // 🔴 YAHA APNA GOOGLE URL PASTE KAREIN
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec '; 
+
+        // Live Sync: Staff ki entry dekhne ke liye
+        async function syncFromSheet() {
+            if(!scriptURL.includes('http')) return;
+            try {
+                const response = await fetch(scriptURL);
+                const data = await response.json();
+                if(data && data.length > 0) {
+                    clients = data;
+                    localStorage.setItem('taisoCRMData', JSON.stringify(clients));
+                    render();
+                }
+            } catch(e) { render(); }
+        }
 
         function addClient() {
             const name = document.getElementById('name').value;
@@ -73,45 +70,27 @@
 
             if(name && date) {
                 const history = `[${timestamp}] ${note}`;
-                const newClient = { id: Date.now(), name, phone, date, remarks: note, history: history };
+                const newClient = { name, phone, date, remarks: note, history: history };
                 
+                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newClient) });
+
                 clients.push(newClient);
                 saveAndRender();
-                sendToSheet(newClient);
                 
                 document.getElementById('name').value = '';
                 document.getElementById('phone').value = '';
                 document.getElementById('initialNote').value = '';
-                alert("Saved Successfully!");
-            } else { alert("Name and Date are required!"); }
+                alert("Client Saved!");
+            } else { alert("Please fill Name and Date!"); }
         }
 
-        // SEARCH FUNCTION
         function filterClients() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const filtered = clients.filter(c => 
-                c.name.toLowerCase().includes(term) || 
-                c.phone.includes(term)
+                (c.name && c.name.toLowerCase().includes(term)) || 
+                (c.phone && c.phone.toString().includes(term))
             );
             render(filtered);
-        }
-
-        function addNote(id) {
-            const extraNote = prompt("Enter call update:");
-            if(extraNote) {
-                const timestamp = new Date().toLocaleString('en-IN');
-                const client = clients.find(c => c.id === id);
-                client.history = `[${timestamp}] ${extraNote} | ` + client.history;
-                client.remarks = extraNote;
-                saveAndRender();
-                sendToSheet(client);
-            }
-        }
-
-        function sendToSheet(data) {
-            if(scriptURL.includes('http')) {
-                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-            }
         }
 
         function saveAndRender() {
@@ -121,44 +100,27 @@
 
         function render(dataToDisplay = clients) {
             const container = document.getElementById('listContainer');
-            container.innerHTML = `<h4 style="display:flex; justify-content:space-between;">Inquiry List <span>${dataToDisplay.length} Found</span></h4>`;
+            container.innerHTML = `<h4>Inquiry List (${dataToDisplay.length})</h4>`;
             
-            dataToDisplay.sort((a,b) => new Date(a.date) - new Date(b.date));
-
-            dataToDisplay.forEach(c => {
+            // Nayi entries upar dikhane ke liye reverse kiya hai
+            [...dataToDisplay].reverse().forEach((c) => {
                 const div = document.createElement('div');
                 div.className = 'client-item';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div>
-                            <b style="font-size:18px;">${c.name}</b><br>
-                            <span style="color:#888;">📞 ${c.phone}</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="color:var(--neon); font-size:12px; font-weight:bold;">Visit: ${c.date}</span>
-                        </div>
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>${c.name}</b>
+                        <span style="color:var(--neon); font-size:12px;">Next: ${c.date}</span>
                     </div>
+                    <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone}</div>
                     <div class="history-box">
-                        <b>Last Talk:</b> ${c.remarks}<br><br>
-                        <b>Full Timeline:</b><br>${c.history.split('|').join('<br>')}
-                    </div>
-                    <div style="margin-top:12px; display:flex; gap:10px;">
-                        <button class="action-btn" onclick="addNote(${c.id})">📞 Update Call</button>
-                        <button class="action-btn" style="color:#ff4444;" onclick="deleteClient(${c.id})">Delete</button>
+                        <b>Full History:</b><br>${c.history ? c.history.split('|').join('<br>') : 'No remarks'}
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function deleteClient(id) {
-            if(confirm("Are you sure?")) {
-                clients = clients.filter(c => c.id !== id);
-                saveAndRender();
-            }
-        }
-
-        render();
+        window.onload = syncFromSheet;
     </script>
 </body>
 </html>
