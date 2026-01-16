@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAISO - CRM</title>
+    <title>TAISO CRM - Pro</title>
     <style>
         :root { --neon: #92d050; --bg: #000; --card: #111; }
         body { background: var(--bg); color: #fff; font-family: sans-serif; padding: 15px; margin: 0; padding-top: 75px; }
         
-        /* Sticky Search */
         .search-box { position: fixed; top: 0; left: 0; width: 100%; background: #1a1a1a; padding: 12px; box-sizing: border-box; z-index: 1000; border-bottom: 2px solid var(--neon); }
         .search-box input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--neon); color: #fff; border-radius: 8px; font-size: 16px; outline: none; }
 
         .input-group { background: var(--card); padding: 20px; border-radius: 20px; border: 1px solid #222; margin-bottom: 20px; }
         input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #050505; border: 1px solid #333; color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         
-        button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+        button { width: 100%; background: var(--neon); color: #000; padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
-        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; position: relative; }
-        .history-box { font-size: 11px; background: #000; padding: 8px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; max-height: 120px; overflow-y: auto; }
-        .action-btn { background: #222; color: var(--neon); padding: 8px 12px; border-radius: 5px; font-size: 12px; border: 1px solid #333; margin-top: 10px; display: inline-block; text-decoration: none; }
+        .client-item { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #222; }
+        .history-box { font-size: 11px; background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444; line-height: 1.5; }
+        .sync-status { text-align: center; font-size: 10px; color: #555; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -28,15 +27,15 @@
         <input type="text" id="searchInput" placeholder="🔍 Search Name or Number..." onkeyup="filterClients()">
     </div>
 
-    <h2 style="color: var(--neon); text-align:center;">TAISO CRM 📞</h2>
+    <h2 style="color: var(--neon); text-align:center; margin-top:20px;">TAISO CRM</h2>
+    <div id="status" class="sync-status">Syncing with Google Sheets...</div>
 
     <div class="input-group">
-        <h4 style="margin:0">New Inquiry</h4>
         <input type="text" id="name" placeholder="Client Name">
         <input type="tel" id="phone" placeholder="Phone Number">
         <input type="date" id="visitDate">
-        <textarea id="initialNote" placeholder="Call remarks..."></textarea>
-        <button onclick="addClient()">Save Client</button>
+        <textarea id="initialNote" placeholder="Conversation remarks..."></textarea>
+        <button onclick="addClient()" id="saveBtn">Save & Sync</button>
     </div>
 
     <div id="listContainer"></div>
@@ -44,21 +43,28 @@
     <script>
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
         
-        // 🔴 YAHA APNA GOOGLE URL PASTE KAREIN
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec '; 
+        // 🔴 APNA GOOGLE URL YAHAN PASTE KAREIN 🔴
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
 
-        // Live Sync: Staff ki entry dekhne ke liye
+        // LIVE SYNC FUNCTION
         async function syncFromSheet() {
-            if(!scriptURL.includes('http')) return;
+            if(!scriptURL || scriptURL.includes('YAHA_')) return;
+            const statusDiv = document.getElementById('status');
+            
             try {
-                const response = await fetch(scriptURL);
+                // cache: "no-store" taaki staff ka data turant khinche
+                const response = await fetch(scriptURL, { cache: "no-store" });
                 const data = await response.json();
+                
                 if(data && data.length > 0) {
                     clients = data;
                     localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-                    render();
+                    statusDiv.innerText = "Last synced: " + new Date().toLocaleTimeString();
                 }
-            } catch(e) { render(); }
+            } catch(e) {
+                statusDiv.innerText = "Offline Mode - Showing Local Data";
+            }
+            render();
         }
 
         function addClient() {
@@ -66,61 +72,69 @@
             const phone = document.getElementById('phone').value;
             const date = document.getElementById('visitDate').value;
             const note = document.getElementById('initialNote').value;
-            const timestamp = new Date().toLocaleString('en-IN');
+            const btn = document.getElementById('saveBtn');
 
             if(name && date) {
+                btn.innerText = "Saving...";
+                btn.disabled = true;
+
+                const timestamp = new Date().toLocaleString('en-IN');
                 const history = `[${timestamp}] ${note}`;
                 const newClient = { name, phone, date, remarks: note, history: history };
                 
-                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newClient) });
-
-                clients.push(newClient);
-                saveAndRender();
-                
-                document.getElementById('name').value = '';
-                document.getElementById('phone').value = '';
-                document.getElementById('initialNote').value = '';
-                alert("Client Saved!");
-            } else { alert("Please fill Name and Date!"); }
+                // Sheet mein bhejna
+                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(newClient) })
+                .then(() => {
+                    // Local list mein turant dikhana
+                    clients.unshift(newClient);
+                    localStorage.setItem('taisoCRMData', JSON.stringify(clients));
+                    render();
+                    
+                    // Reset
+                    document.getElementById('name').value = '';
+                    document.getElementById('phone').value = '';
+                    document.getElementById('initialNote').value = '';
+                    btn.innerText = "Save & Sync";
+                    btn.disabled = false;
+                    alert("Client Saved to Cloud!");
+                });
+            } else { alert("Name and Date are required!"); }
         }
 
         function filterClients() {
             const term = document.getElementById('searchInput').value.toLowerCase();
             const filtered = clients.filter(c => 
-                (c.name && c.name.toLowerCase().includes(term)) || 
+                (c.name && c.name.toString().toLowerCase().includes(term)) || 
                 (c.phone && c.phone.toString().includes(term))
             );
             render(filtered);
-        }
-
-        function saveAndRender() {
-            localStorage.setItem('taisoCRMData', JSON.stringify(clients));
-            render();
         }
 
         function render(dataToDisplay = clients) {
             const container = document.getElementById('listContainer');
             container.innerHTML = `<h4>Inquiry List (${dataToDisplay.length})</h4>`;
             
-            // Nayi entries upar dikhane ke liye reverse kiya hai
-            [...dataToDisplay].reverse().forEach((c) => {
+            // Reverse taaki nayi entries upar dikhein
+            dataToDisplay.forEach((c) => {
                 const div = document.createElement('div');
                 div.className = 'client-item';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;">
-                        <b>${c.name}</b>
-                        <span style="color:var(--neon); font-size:12px;">Next: ${c.date}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="font-size:18px;">${c.name}</b>
+                        <span style="color:var(--neon); font-size:12px;">Visit: ${c.date}</span>
                     </div>
                     <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone}</div>
                     <div class="history-box">
-                        <b>Full History:</b><br>${c.history ? c.history.split('|').join('<br>') : 'No remarks'}
+                        <b>History:</b><br>${c.history ? c.history.split('|').join('<br>') : 'No remarks'}
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
+        // App khulne par aur har 30 second mein auto-sync
         window.onload = syncFromSheet;
+        setInterval(syncFromSheet, 30000); 
     </script>
 </body>
 </html>
