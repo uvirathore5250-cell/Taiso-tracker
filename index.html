@@ -12,12 +12,19 @@
         input, textarea { 
             width: 100%; padding: 12px; margin: 8px 0; 
             background: #050505; border: 1px solid #333; 
-            color: #fff; border-radius: 10px; box-sizing: border-box;
+            color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 16px;
         }
         
         button { 
             width: 100%; background: var(--neon); color: #000; 
             padding: 14px; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px;
+        }
+
+        /* Search Bar Style */
+        .search-box {
+            position: sticky; top: 10px; z-index: 100;
+            background: #1a1a1a; border: 2px solid var(--neon);
+            margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
         .client-item { 
@@ -28,36 +35,41 @@
         .history-box { 
             font-size: 11px; background: #000; padding: 8px; 
             border-radius: 8px; margin-top: 10px; color: #aaa; border: 1px dashed #444;
+            max-height: 100px; overflow-y: auto;
         }
 
-        .action-btn { background: #222; color: var(--neon); padding: 5px 10px; border-radius: 5px; font-size: 11px; width: auto; display: inline-block; margin-right: 5px;}
+        .action-btn { background: #222; color: var(--neon); padding: 8px 12px; border-radius: 5px; font-size: 12px; width: auto; display: inline-block; margin-right: 5px; border: 1px solid #333;}
     </style>
 </head>
 <body>
 
     <h2 style="color: var(--neon); text-align:center;">TAISO CRM 📞</h2>
 
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search Name or Number..." onkeyup="filterClients()">
+
     <div class="input-group">
-        <h4>New Inquiry</h4>
+        <h4 style="margin-top:0;">New Inquiry</h4>
         <input type="text" id="name" placeholder="Client Name">
         <input type="tel" id="phone" placeholder="Phone Number">
         <input type="date" id="visitDate">
-        <textarea id="initialNote" placeholder="First call remarks (e.g. Budget issue, interested)"></textarea>
-        <button onclick="addClient()">Save Client</button>
+        <textarea id="initialNote" placeholder="Call remarks..."></textarea>
+        <button onclick="addClient()">Save to Cloud & App</button>
     </div>
 
     <div id="listContainer"></div>
 
     <script>
         let clients = JSON.parse(localStorage.getItem('taisoCRMData')) || [];
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; // Apna URL paste karein
+        
+        // 🔴 APNA GOOGLE URL YAHAN PASTE KAREIN
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbymfnVgpFjC2HEItC6P2v1moyt91xDx6MVu9k_dZ6w0hg0XUCYj7BuJ2ShYOflPxUjM/exec'; 
 
         function addClient() {
             const name = document.getElementById('name').value;
             const phone = document.getElementById('phone').value;
             const date = document.getElementById('visitDate').value;
             const note = document.getElementById('initialNote').value;
-            const timestamp = new Date().toLocaleString();
+            const timestamp = new Date().toLocaleString('en-IN');
 
             if(name && date) {
                 const history = `[${timestamp}] ${note}`;
@@ -67,27 +79,39 @@
                 saveAndRender();
                 sendToSheet(newClient);
                 
-                // Reset fields
                 document.getElementById('name').value = '';
                 document.getElementById('phone').value = '';
                 document.getElementById('initialNote').value = '';
-            }
+                alert("Saved Successfully!");
+            } else { alert("Name and Date are required!"); }
+        }
+
+        // SEARCH FUNCTION
+        function filterClients() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = clients.filter(c => 
+                c.name.toLowerCase().includes(term) || 
+                c.phone.includes(term)
+            );
+            render(filtered);
         }
 
         function addNote(id) {
             const extraNote = prompt("Enter call update:");
             if(extraNote) {
-                const timestamp = new Date().toLocaleString();
+                const timestamp = new Date().toLocaleString('en-IN');
                 const client = clients.find(c => c.id === id);
-                client.history += ` | [${timestamp}] ${extraNote}`;
-                client.remarks = extraNote; // Latest remark
+                client.history = `[${timestamp}] ${extraNote} | ` + client.history;
+                client.remarks = extraNote;
                 saveAndRender();
                 sendToSheet(client);
             }
         }
 
         function sendToSheet(data) {
-            fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+            if(scriptURL.includes('http')) {
+                fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+            }
         }
 
         function saveAndRender() {
@@ -95,25 +119,32 @@
             render();
         }
 
-        function render() {
+        function render(dataToDisplay = clients) {
             const container = document.getElementById('listContainer');
-            container.innerHTML = '<h4>Client History</h4>';
+            container.innerHTML = `<h4 style="display:flex; justify-content:space-between;">Inquiry List <span>${dataToDisplay.length} Found</span></h4>`;
             
-            clients.sort((a,b) => new Date(a.date) - new Date(b.date));
+            dataToDisplay.sort((a,b) => new Date(a.date) - new Date(b.date));
 
-            clients.forEach(c => {
+            dataToDisplay.forEach(c => {
                 const div = document.createElement('div');
                 div.className = 'client-item';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;">
-                        <b>${c.name}</b>
-                        <span style="color:var(--neon); font-size:12px;">Next Visit: ${c.date}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <b style="font-size:18px;">${c.name}</b><br>
+                            <span style="color:#888;">📞 ${c.phone}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="color:var(--neon); font-size:12px; font-weight:bold;">Visit: ${c.date}</span>
+                        </div>
                     </div>
-                    <div style="font-size:13px; color:#888; margin-top:5px;">📞 ${c.phone}</div>
-                    <div class="history-box"><b>Latest:</b> ${c.remarks} <br><br> <b>History:</b> ${c.history}</div>
-                    <div style="margin-top:10px;">
-                        <button class="action-btn" onclick="addNote(${c.id})">+ Add Follow-up</button>
-                        <button class="action-btn" style="color:red;" onclick="deleteClient(${c.id})">Delete</button>
+                    <div class="history-box">
+                        <b>Last Talk:</b> ${c.remarks}<br><br>
+                        <b>Full Timeline:</b><br>${c.history.split('|').join('<br>')}
+                    </div>
+                    <div style="margin-top:12px; display:flex; gap:10px;">
+                        <button class="action-btn" onclick="addNote(${c.id})">📞 Update Call</button>
+                        <button class="action-btn" style="color:#ff4444;" onclick="deleteClient(${c.id})">Delete</button>
                     </div>
                 `;
                 container.appendChild(div);
@@ -121,7 +152,7 @@
         }
 
         function deleteClient(id) {
-            if(confirm("Pakka delete karein?")) {
+            if(confirm("Are you sure?")) {
                 clients = clients.filter(c => c.id !== id);
                 saveAndRender();
             }
